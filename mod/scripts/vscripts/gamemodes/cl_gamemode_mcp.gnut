@@ -1,12 +1,6 @@
 global function ClGamemodeMCP_Init
 global function ServerCallback_MobileCapturepoints_Moving
 
-struct {
-    var panelARui
-    var panelBRui
-    var panelCRui
-} file
-
 void function ClGamemodeMCP_Init()
 {
     GamemodeCPShared_Init()

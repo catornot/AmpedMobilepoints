@@ -3,12 +3,6 @@ global function GamemodeMCP_Init
 global function RateSpawnpoints_MCP
 
 
-struct {
-    bool hasmadespawns = false
-    array<entity> goals
-    array<vector> spawnoffsets = [ < 0, 50, 10 >, < 0, -50, 10 >, < 50, 0, 10 >, < -50, -0, 10 > ] // some sort of spawn checking (ray trace?) in the future
-} file
-
 void function GamemodeMCP_Init()
 {
     GamemodeCPShared_Init()
