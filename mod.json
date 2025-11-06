@@ -1,0 +1,32 @@
+{
+    "Name": "cat_or_not.Amped Mobilepoint",
+    "Description": "Amped Hardpoint but the capture points move around",
+    "Version": "0.0.1",
+    "DownloadLink": "https://northstar.thunderstore.io/package/download/Example/Mod/",
+
+    "LoadPriority": 3,
+    "RequiredOnClient": true,
+    "Scripts": [
+        {
+            "Path": "gamemodes/sh_gamemode_mcp.gnut",
+            "RunOn": "( CLIENT || SERVER ) && MP",
+            "ServerCallback": {
+                "Before": "MobilePointMode_Init"
+            },
+            "ClientCallback": {
+                "Before": "MobilePointMode_Init"
+            }
+        },
+        {
+            "Path": "gamemodes/cl_gamemode_mcp.gnut",
+            "RunOn": "CLIENT && MP"
+        },
+        {
+            "Path": "gamemodes/_gamemode_mcp.gnut",
+            "RunOn": "SERVER && MP"
+        }
+    ],
+    "Localisation": [
+        "resource/mobilepoint_localisation_%language%.txt"
+    ]
+}

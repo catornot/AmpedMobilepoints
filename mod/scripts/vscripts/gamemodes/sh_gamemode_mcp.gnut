@@ -1,0 +1,80 @@
+global function MobilePointMode_Init
+
+global const string GAMEMODE_MCP = "mcp"
+
+void function MobilePointMode_Init()
+{
+    AddCallback_OnCustomGamemodesInit( CreateGamemodeMCP )
+    AddCallback_OnRegisteringCustomNetworkVars( MCPRegisterNetworkVars )
+
+    #if CLIENT
+        // just GAMETYPE isn't set yet at this time lol
+    	if ( GetConVarString( "mp_gamemode" ) == GAMEMODE_MCP )
+            ClGameState_RegisterGameStateAsset( $"ui/gamestate_info_cp.rpak" )
+    #endif
+}
+
+
+void function CreateGamemodeMCP()
+{
+    GameMode_Create( GAMEMODE_MCP )
+    GameMode_SetName( GAMEMODE_MCP, "#GAMEMODE_MCP" )
+    GameMode_SetDesc( GAMEMODE_MCP, "#PL_mcp_desc" )
+	#if FACTION_DIALOGUE_ENABLED
+		GameMode_SetGameModeAnnouncement( GAMEMODE_MCP, "hp_modeDesc" )
+	#else
+		GameMode_SetGameModeAnnouncement( GAMEMODE_MCP, "GameModeAnnounce_CP" )
+	#endif
+	GameMode_SetIcon( GAMEMODE_MCP, $"ui/menu/playlist/cp" )
+	GameMode_SetDefaultScoreLimits( GAMEMODE_MCP, 500, 500 )
+	GameMode_SetDefaultTimeLimits( GAMEMODE_MCP, 15, 0.0 )
+	GameMode_AddScoreboardColumnData( GAMEMODE_MCP, "#SCOREBOARD_ASSAULT", PGS_ASSAULT_SCORE, 4 )
+	GameMode_AddScoreboardColumnData( GAMEMODE_MCP, "#SCOREBOARD_DEFENSE", PGS_DEFENSE_SCORE, 4 )
+	GameMode_AddScoreboardColumnData( GAMEMODE_MCP, "#SCOREBOARD_KILLS", PGS_KILLS, 2 )
+	GameMode_SetColor( GAMEMODE_MCP, [46, 188, 180, 255] )
+
+	AddPrivateMatchModeSettingEnum( "#GAMEMODE_MCP", "cp_amped_capture_points", [ "#SETTING_DISABLED", "#SETTING_ENABLED" ], "1" ) // would've been nice to use amped_capture_points, but this var is already used ingame and its value is default 0
+
+    AddPrivateMatchMode( GAMEMODE_MCP ) // add to private lobby modes
+
+    #if SERVER
+        GameMode_AddServerInit( GAMEMODE_MCP, GamemodeMCP_Init )
+		GameMode_SetPilotSpawnpointsRatingFunc( GAMEMODE_MCP, RateSpawnpoints_MCP )
+		GameMode_SetTitanSpawnpointsRatingFunc( GAMEMODE_MCP, RateSpawnpoints_MCP )
+    #elseif CLIENT
+        GameMode_AddClientInit( GAMEMODE_MCP, ClGamemodeMCP_Init )
+    #endif
+    #if !UI
+        GameMode_SetScoreCompareFunc( GAMEMODE_MCP, CompareAssaultScore )
+    #endif
+}
+
+void function MCPRegisterNetworkVars()
+{
+    if ( GAMETYPE != GAMEMODE_MCP )
+        return
+
+    Remote_RegisterFunction( "ServerCallback_MobileCapturepoints_Moving" )
+
+	printt( "registering gamemode network variables for MOBILE_CAPTURE_POINT" )
+	RegisterNetworkedVariable( "objectiveAEnt", SNDC_GLOBAL, SNVT_ENTITY )
+	RegisterNetworkedVariable( "objectiveBEnt", SNDC_GLOBAL, SNVT_ENTITY )
+	RegisterNetworkedVariable( "objectiveCEnt", SNDC_GLOBAL, SNVT_ENTITY )
+
+	RegisterNetworkedVariable( "objectiveAState", SNDC_GLOBAL, SNVT_INT )
+	RegisterNetworkedVariable( "objectiveBState", SNDC_GLOBAL, SNVT_INT )
+	RegisterNetworkedVariable( "objectiveCState", SNDC_GLOBAL, SNVT_INT )
+
+	RegisterNetworkedVariable( "objectiveACappingTeam", SNDC_GLOBAL, SNVT_INT )
+	RegisterNetworkedVariable( "objectiveBCappingTeam", SNDC_GLOBAL, SNVT_INT )
+	RegisterNetworkedVariable( "objectiveCCappingTeam", SNDC_GLOBAL, SNVT_INT )
+
+	RegisterNetworkedVariable( "objectiveAProgress", SNDC_GLOBAL, SNVT_FLOAT_RANGE_OVER_TIME, 0.0, 0.0, 2.0 )
+	RegisterNetworkedVariable( "objectiveBProgress", SNDC_GLOBAL, SNVT_FLOAT_RANGE_OVER_TIME, 0.0, 0.0, 2.0 )
+	RegisterNetworkedVariable( "objectiveCProgress", SNDC_GLOBAL, SNVT_FLOAT_RANGE_OVER_TIME, 0.0, 0.0, 2.0 )
+
+	RegisterNetworkedVariable( "imcChevronState", SNDC_GLOBAL, SNVT_INT )
+	RegisterNetworkedVariable( "milChevronState", SNDC_GLOBAL, SNVT_INT )
+
+	Remote_RegisterFunction( "ServerCallback_CP_PlayMatchEndingMusic" )
+}

@@ -1,0 +1,30 @@
+global function ClGamemodeMCP_Init
+global function ServerCallback_MobileCapturepoints_Moving
+
+struct {
+    var panelARui
+    var panelBRui
+    var panelCRui
+} file
+
+void function ClGamemodeMCP_Init()
+{
+    GamemodeCPShared_Init()
+    // ClCapturePoint_Init()
+
+    // RegisterLevelMusicForTeam( eMusicPieceID.LEVEL_INTRO, "Music_Beacon_14_BTThrowThruFirstCrane", TEAM_MILITIA )
+    // RegisterLevelMusicForTeam( eMusicPieceID.LEVEL_INTRO, "Music_Beacon_14_BTThrowThruFirstCrane", TEAM_MILITIA )
+}
+
+
+void function ServerCallback_MobileCapturepoints_Moving()
+{
+    AnnouncementData announcement = Announcement_Create( "#MCP_CAPTURE_POINTS_MOVING" )
+    Announcement_SetSubText( announcement, Localize( "#MCP_CAPTURE_POINTS_MOVING" ))
+    Announcement_SetTitleColor( announcement, <0,1,0> )
+    Announcement_SetPurge( announcement, true )
+    Announcement_SetPriority( announcement, 200 ) //Be higher priority than Titanfall ready indicator etc
+    Announcement_SetSoundAlias( announcement, SFX_HUD_ANNOUNCE_QUICK )
+    Announcement_SetStyle( announcement, ANNOUNCEMENT_STYLE_QUICK )
+    AnnouncementFromClass( GetLocalViewPlayer(), announcement )
+}
