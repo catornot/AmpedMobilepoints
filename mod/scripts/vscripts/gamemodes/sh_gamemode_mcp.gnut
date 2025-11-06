@@ -45,6 +45,7 @@ void function CreateGamemodeMCP()
         GameMode_AddClientInit( GAMEMODE_MCP, ClGamemodeMCP_Init )
     #endif
     #if !UI
+        GameMode_SetScoreCompareFunc( GAMEMODE_MCP, CompareCP )
         GameMode_AddSharedInit( GAMEMODE_MCP, ShGamemodeMCP_Init )
         GameMode_SetScoreCompareFunc( GAMEMODE_MCP, CompareAssaultScore )
     #endif
