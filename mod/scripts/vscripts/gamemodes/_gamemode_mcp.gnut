@@ -2,6 +2,15 @@ untyped
 global function GamemodeMCP_Init
 global function RateSpawnpoints_MCP
 
+global hardpointsReady = 0
+
+struct NewHardpointState
+{
+    entity circleTrigger
+	entity trigger
+    vector origin
+    vector angles
+}
 
 void function GamemodeMCP_Init()
 {
@@ -79,6 +88,11 @@ void function RateSpawnpoints_MCP( int checkClass, array<entity> spawnpoints, in
 
 void function EntitiesDidLoad_SpawnHardpoints()
 {
+    #if BP_ORT && BOTEXTRAS
+	if (GetConVarBool( "auto_select_gamemode") )
+    	SetConVarInt( "bot_cmds_type", 8 )
+    #endif
+
 	foreach ( entity hp in GetEntArrayByClass_Expensive("info_hardpoint") )
 	{
 		if ( MobileHardpointRemove( hp ) || !hp.HasKey( "triggerTarget" ) )
@@ -130,6 +144,110 @@ void function EntitiesDidLoad_SpawnHardpoints()
 	}
 
 	thread TrackChevronStates()
+    thread HandleCapturepointMovement()
+}
+
+void function HandleCapturepointMovement()
+{
+	while ( GetGameState() != eGameState.Playing )
+		WaitFrame()
+
+	while ( GetGameState() <= eGameState.Playing )
+	{
+        wait 10
+
+        bool prevAmpingState = CPstate.ampingEnabled
+        CPstate.ampingEnabled = false
+
+        CPstate.hardpoints.randomize()
+        vector destination = CPstate.hardpoints[ CPstate.hardpoints.len() - 1 ].prop.GetOrigin()
+        vector angles = CPstate.hardpoints[ CPstate.hardpoints.len() - 1 ].prop.GetAngles()
+        entity trigger = CPstate.hardpoints[ CPstate.hardpoints.len() - 1 ].trigger
+        foreach( HardpointState hardpoint in CPstate.hardpoints )
+        {
+            hardpoint.trigger.Disable()
+            
+            NewHardpointState newHp
+            newHp.circleTrigger = trigger
+        	newHp.trigger = trigger
+            newHp.origin = destination
+            newHp.angles = angles
+
+            thread HandleSingleHardpointMovement( hardpoint, newHp )
+            destination = hardpoint.prop.GetOrigin()
+            angles = hardpoint.prop.GetAngles()
+            trigger = hardpoint.trigger
+        }
+        
+        while ( hardpointsReady >= 3 )
+            WaitFrame()
+        
+        foreach( entity player in GetPlayerArray() )
+            Remote_CallFunction_Replay( player, "ServerCallback_MobileCapturepoints_Moving" )
+
+        wait 30
+
+        while ( hardpointsReady == 0 )
+            WaitFrame()
+
+        CPstate.ampingEnabled = prevAmpingState
+
+        foreach( entity player in GetPlayerArray() )
+            Remote_CallFunction_Replay( player, "ServerCallback_MobileCapturepoints_Settled" )
+    }
+}
+
+void function HandleSingleHardpointMovement( HardpointState hp, NewHardpointState newHp )
+{
+    WaitFrame()
+
+	array<vector> path = OcttreeFindPath( hp.prop.GetOrigin() + <0,0,50>, newHp.origin + <0,0,50> )
+
+    hardpointsReady += 1
+
+    thread HandleSingleHardpointMovementFollow( hp, newHp, path )
+}
+
+void function HandleSingleHardpointMovementFollow( HardpointState hp, NewHardpointState newHp, array<vector> path )
+{
+    // angle it correctly
+    hp.prop.SetAngles( <hp.prop.GetAngles().x, 0, 0> )
+    
+    entity mover = CreateScriptMover( hp.prop.GetOrigin(), hp.prop.GetAngles() )
+    hp.prop.SetParent( mover )
+    
+    float timePerLine = max( 30.0 / path.len(), 0.1 )
+
+    foreach( vector point in path )
+    {
+        mover.NonPhysicsMoveTo( point, timePerLine, 0.0, 0.0 )
+        wait timePerLine
+
+        hp.ent.SetOrigin( mover.GetOrigin() )
+        foreach( entity player in GetPlayerArray() )
+            Remote_CallFunction_NonReplay( player, "ServerCallback_MobileCapturepoint_Moved", hp.ent.GetEncodedEHandle() )
+    }
+
+    mover.NonPhysicsMoveTo( newHp.origin, timePerLine * 2, 0.0, 0.0 )
+    mover.NonPhysicsRotateTo( newHp.angles, timePerLine * 4, 0.0, 0.0 )
+
+    wait timePerLine * 4 // wait last moveto
+
+    // clear mover
+    hp.prop.ClearParent()
+    mover.Destroy()
+
+    // setup new hp
+    hp.prop.SetOrigin( newHp.origin )
+    hp.prop.SetAngles( newHp.angles )
+    hp.ent.SetOrigin( hp.prop.GetOrigin() )
+
+    // setup new trigger
+    hp.trigger = newHp.trigger
+    hp.trigger.SetOwner( hp.ent )
+    hp.trigger.Enable()
+
+    hardpointsReady -= 1
 }
 
 bool function MobileHardpointRemove( entity ent )

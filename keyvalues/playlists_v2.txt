@@ -10,7 +10,7 @@ playlists
                 name #PL_mcp
                 lobbytitle #PL_mcp_lobby
                 description #PL_mcp_desc
-                hint #PL_cp_desc
+                hint #PL_mcp_desc
                 abbreviation #PL_mcp_abbr
                 image cp
 

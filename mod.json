@@ -28,5 +28,12 @@
     ],
     "Localisation": [
         "resource/mobilepoint_localisation_%language%.txt"
-    ]
+    ],
+    "PluginDependencies": [
+        "BP_ORT",
+        "OCTBOTS",
+    ],
+    "Dependencies": {
+        "BOTEXTRAS": "cat_or_not.BotExtras"
+    },
 }
