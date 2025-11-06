@@ -3,8 +3,6 @@ global function ServerCallback_MobileCapturepoints_Moving
 
 void function ClGamemodeMCP_Init()
 {
-    ClCapturePoint_Init()
-
 	RegisterLevelMusicForTeam( eMusicPieceID.LEVEL_INTRO, "music_mp_hardpoint_intro_flyin", TEAM_IMC )
 	RegisterLevelMusicForTeam( eMusicPieceID.LEVEL_INTRO, "music_mp_hardpoint_intro_flyin", TEAM_MILITIA )
 

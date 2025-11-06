@@ -81,7 +81,7 @@ void function EntitiesDidLoad_SpawnHardpoints()
 {
 	foreach ( entity hp in GetEntArrayByClass_Expensive("info_hardpoint") )
 	{
-		if ( GameModeRemove( hp ) || !hp.HasKey( "triggerTarget" ) )
+		if ( MobileHardpointRemove( hp ) || !hp.HasKey( "triggerTarget" ) )
 			continue
 
 		HardpointState hpState
@@ -131,3 +131,34 @@ void function EntitiesDidLoad_SpawnHardpoints()
 
 	thread TrackChevronStates()
 }
+
+bool function MobileHardpointRemove( entity ent )
+{
+    string gameMode = "cp"
+
+	not_AT_CollisionCleanup( ent )
+
+	string gamemodeKey = "gamemode_" + gameMode
+	if ( ent.HasKey( gamemodeKey ) && (ent.kv[gamemodeKey] == "0" || ent.kv[gamemodeKey] == "") )
+	{
+		// printt( "Removing ent " + ent.GetClassName() + " with " + gamemodeKey + " = \"" + ent.kv[gamemodeKey] + "\" at " + ent.GetOrigin() )
+		ent.Destroy()
+		return true
+	}
+	//printt( "keeping ent", ent.GetClassName() )
+
+	return false
+}
+
+void function not_AT_CollisionCleanup( entity spawnPoint )
+{
+	if ( spawnPoint.GetScriptName() == "at_mega_turret" )
+	{
+		if ( spawnPoint.GetLinkEnt() != null ) // assuming this is func_brush_navmesh_separator
+		{
+			entity brush = spawnPoint.GetLinkEnt()
+			brush.NotSolid()
+		}
+	}
+}
+
