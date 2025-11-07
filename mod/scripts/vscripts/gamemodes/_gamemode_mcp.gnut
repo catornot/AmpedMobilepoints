@@ -198,16 +198,23 @@ void function HandleSingleHardpointMovement( HardpointState hp, NewHardpointStat
 
     // doing this is does really weird stuff
 	array<vector> path = OcttreeFindPath( hp.prop.GetOrigin() + <0,0,50>, newHp.origin + <0,0,50> )
+    // var navmesh = NavigationCreate( NavigationFindPath )
+    // NavigationFindPath( navmesh, hp.prop.GetOrigin() + <0,0,50>, newHp.origin + <0,0,50> )
+    // var pathVar = NavigationGetAllPoints( navmesh )
+		
+    // array<vector> path = []
+    // foreach ( var point in expect array( pathVar ) )
+    //     path.insert( 0, expect vector( point ) )
 
     thread HandleSingleHardpointMovementFollow( hp, newHp, path )
 }
 
 void function HandleSingleHardpointMovementFollow( HardpointState hp, NewHardpointState newHp, array<vector> path )
 {
+    hardpointsReady += 1
+
     while ( hardpointsReady < 3 )
         WaitFrame()
-
-    hardpointsReady += 1
 
     // angle it correctly
     hp.prop.SetAngles( <0, hp.prop.GetAngles().y, 0> )
@@ -216,11 +223,11 @@ void function HandleSingleHardpointMovementFollow( HardpointState hp, NewHardpoi
     hp.prop.SetParent( mover )
     
     float totalTime = Distance2D( hp.prop.GetOrigin(), newHp.origin ) / 50.
-    float timePerLine = totalTime / path.len()
+    float timePerLine = min( max( totalTime / path.len(), 0.00001 ), 5. )
 
     foreach( vector point in path )
     {
-        mover.NonPhysicsMoveTo( point, 0.000001, 0.0, 0.0 )
+        mover.NonPhysicsMoveTo( point, timePerLine, 0.0, 0.0 )
         // wait timePerLine
         WaitFrame()
     }
