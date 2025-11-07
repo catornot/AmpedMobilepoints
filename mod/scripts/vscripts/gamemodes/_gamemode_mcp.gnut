@@ -145,7 +145,11 @@ void function EntitiesDidLoad_SpawnHardpoints()
 	}
 
 	thread TrackChevronStates()
+    #if BP_ORT && OCTBOTS
     thread HandleCapturepointMovement()
+    #else
+    throw "no bp_ort; install bp_ort"
+    #endif
 }
 
 void function HandleCapturepointMovement()
@@ -196,8 +200,13 @@ void function HandleSingleHardpointMovement( HardpointState hp, NewHardpointStat
 {
     WaitFrame()
 
+    #if BP_ORT && OCTBOTS
     // doing this is does really weird stuff
 	array<vector> path = OcttreeFindPath( hp.prop.GetOrigin() + <0,0,50>, newHp.origin + <0,0,50> )
+    #else
+    print( "no bp_ort :(" )
+    path = [ hp.prop.GetOrigin() + <0,0,50>, newHp.origin + <0,0,50> ]
+    #endif
 
     thread HandleSingleHardpointMovementFollow( hp, newHp, path )
 }
