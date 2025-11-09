@@ -207,7 +207,7 @@ void function HandleSingleHardpointMovement( HardpointState hp, NewHardpointStat
 	array<vector> path = OcttreeFindPath( hp.prop.GetOrigin() + <0,0,50>, newHp.origin + <0,0,50> )
     #else
     print( "no bp_ort :(" )
-    path = [ hp.prop.GetOrigin() + <0,0,50>, newHp.origin + <0,0,50> ]
+    array<vector> path = [ hp.prop.GetOrigin() + <0,0,50>, newHp.origin + <0,0,50> ]
     #endif
 
     thread HandleSingleHardpointMovementFollow( hp, newHp, path )
@@ -259,10 +259,14 @@ void function HandleSingleHardpointMovementFollow( HardpointState hp, NewHardpoi
 
     hardpointsReady -= 1
 
+    hp.trigger.SearchForNewTouchingEntity()
+
     // wait a bit for the other trigger to be done
     wait 0.5
     
     hp.trigger.SearchForNewTouchingEntity()
+	foreach ( entity ent in hp.trigger.GetTouchingEntities() )
+		OnHardpointEnter( hp.trigger, ent )
 }
 
 void function HandleHardpointRuiMovement( HardpointState hp )
