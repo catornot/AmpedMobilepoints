@@ -231,6 +231,7 @@ void function HandleSingleHardpointMovementFollow( HardpointState hp, NewHardpoi
 
     foreach( vector point in path )
     {
+		point = FitHardpoint( hp.prop, point )
         mover.NonPhysicsMoveTo( point, timePerLine, 0.0, 0.0 )
         // wait timePerLine
         WaitFrame()
@@ -260,13 +261,32 @@ void function HandleSingleHardpointMovementFollow( HardpointState hp, NewHardpoi
     hardpointsReady -= 1
 
     hp.trigger.SearchForNewTouchingEntity()
+}
 
-    // wait a bit for the other trigger to be done
-    wait 0.5
-    
-    hp.trigger.SearchForNewTouchingEntity()
-	foreach ( entity ent in hp.trigger.GetTouchingEntities() )
-		OnHardpointEnter( hp.trigger, ent )
+vector function FitHardpoint( entity prop, vector point )
+{
+	return point + FitHardpointAxial( prop, point, <1,0,0> ) + FitHardpointAxial( prop, point, <0,1,0> ) + FitHardpointAxial( prop, point, <0,0,1> )
+}
+
+const float FloatingDist = 20.
+vector function FitHardpointAxial( entity prop, vector point, vector dir )
+{
+	float l = -FitHardpointDir( prop, point, dir )
+	float r = FitHardpointDir( prop, point, -dir )
+
+	if ( fabs( l ) != FloatingDist && fabs( r ) != FloatingDist )
+		return ( ( l + r ) / 2. ) * dir
+	if ( -l < r )
+		return -( l + FloatingDist ) * dir
+	if ( -l > r )
+		return -( l - FloatingDist ) * dir
+	return <0,0,0>
+}
+
+float function FitHardpointDir( entity prop, vector point, vector dir )
+{
+	TraceResults trace = TraceLine( point, point + dir * FloatingDist, [ prop ], TRACE_MASK_SHOT, TRACE_COLLISION_GROUP_DEBRIS )
+	return sqrt( DistanceSqr( trace.endPos, point ) )
 }
 
 void function HandleHardpointRuiMovement( HardpointState hp )
@@ -305,11 +325,15 @@ void function HandleHardpointTrigger( HardpointState hp, entity trigger )
     AddCallback_ScriptTriggerLeave( trigger, OnHardpointLeave )
 
 	OnThreadEnd(
-		function() : ( trigger )
+		function() : ( hp, trigger )
 		{
             foreach( entity ent in GetAllEntitiesInTrigger( trigger ) )
                 OnHardpointLeave( trigger, ent )
             trigger.Destroy()
+
+		    hp.trigger.SearchForNewTouchingEntity()
+			foreach ( entity ent in hp.trigger.GetTouchingEntities() )
+				OnHardpointEnter( hp.trigger, ent )
         }
 	)
 
