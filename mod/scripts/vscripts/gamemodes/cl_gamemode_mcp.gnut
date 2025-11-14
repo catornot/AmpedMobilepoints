@@ -56,27 +56,27 @@ void function OnHardpointCreated( entity hardpoint )
     
 }
 
-void function ServerCallback_MobileCapturepointMoveUI( int capturePointHandle )
+void function ServerCallback_MobileCapturepointMoveUI( int capturePointHandle, int propHandle )
 {
-    thread MobileCapturepointMoveUIThreaded( capturePointHandle )
+    thread MobileCapturepointMoveUIThreaded( capturePointHandle, propHandle )
 }
 
-void function MobileCapturepointMoveUIThreaded( int capturePointHandle )
+void function MobileCapturepointMoveUIThreaded( int capturePointHandle, int propHandle )
 {
 	entity capturePoint = GetEntityFromEncodedEHandle( capturePointHandle )
+	entity prop = GetEntityFromEncodedEHandle( capturePointHandle )
 
     capturePoint.EndSignal( "StopUIMove" )
     capturePoint.EndSignal( "OnDestroy" )
 
-    for(;;)
-    {
-    	RuiSetFloat3(  GetHardpointWorlRui( capturePoint.GetHardpointID() ), "pos", capturePoint.GetOrigin() + < 0, 0, 64 > )
-        WaitFrame()
-    }
+	RuiTrackFloat3( GetHardpointWorlRui( capturePoint.GetHardpointID() ), "pos", prop, RUI_TRACK_ABSORIGIN_FOLLOW )
 }
 
 void function ServerCallback_MobileCapturepointStopUIMove( int capturePointHandle )
 {
 	entity capturePoint = GetEntityFromEncodedEHandle( capturePointHandle )
+
+	RuiSetFloat3( GetHardpointWorlRui( capturePoint.GetHardpointID() ), "pos", capturePoint.GetOrigin() + < 0, 0, 64 > )
+
     capturePoint.Signal( "StopUIMove" )
 }
