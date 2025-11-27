@@ -49,6 +49,7 @@ jobs:
           # Directory to wrap the contents of the repo in
           wrap: mods/${{ github.repository_owner }}.${{ env.name }} # This will wrap your Author.ModName folder in a mods/ folder before publishing
           # deps: "northstar-Northstar@1.31.4" # <------------- Uncomment this line to add dependencies to your mod, each sparated by a space
+          repo: northstar.thunderstore.io
           categories: |
             mods
             server-side
