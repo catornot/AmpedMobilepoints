@@ -209,12 +209,25 @@ void function HandleSingleHardpointMovement( HardpointState hp, NewHardpointStat
 {
     WaitFrame()
 
-    #if BP_ORT && OCTBOTS
-    // doing this is does really weird stuff
-	array<vector> path = OcttreeFindPath( hp.prop.GetOrigin() + <0,0,50>, newHp.origin + <0,0,50> )
-    #else
-    print( "no bp_ort :(" )
-    array<vector> path = [ hp.prop.GetOrigin() + <0,0,50>, newHp.origin + <0,0,50> ]
+    #if OCTBOTS
+	    // doing this is does really weird stuff
+		array<vector> path = OcttreeFindPath( hp.prop.GetOrigin() + <0,0,50>, newHp.origin + <0,0,50> )
+    #elseif BP_ORT
+		var navs = NavigationCreate( HULL_HUMAN );
+		try {
+			NavigationFindPath( navs, expect vector ( NavigationRandomPoint( navs, hp.prop.GetOrigin(), 50.) ), expect vector ( NavigationRandomPoint( navs, newHp.origin, 50.) ) );
+		} catch ( err ) { }
+		array<vector> path = []
+
+		var point = NavigationNextPoint( navs );
+		while( point != null ) {
+			print( point )
+			path.append( expect vector( point ) )
+			point = NavigationNextPoint( navs )
+		}
+    #else 
+	    print( "no bp_ort :(" )
+	    array<vector> path = [ hp.prop.GetOrigin() + <0,0,50>, newHp.origin + <0,0,50> ]
     #endif
 
     thread HandleSingleHardpointMovementFollow( hp, newHp, path )
@@ -232,29 +245,46 @@ void function HandleSingleHardpointMovementFollow( HardpointState hp, NewHardpoi
 	array<entity> activeFX
 	entity dirFX
 
-	activeFX.append( StartParticleEffectOnEntityWithPos_ReturnEntity( hp.prop, GetParticleSystemIndex( $"P_team_jet_hover_HLD" ), FX_PATTACH_CUSTOMORIGIN_FOLLOW, hp.prop.LookupAttachment( "REF" ), < -10, -10, -2>, <90,90,90> ) )
-	activeFX.append( StartParticleEffectOnEntityWithPos_ReturnEntity( hp.prop, GetParticleSystemIndex( $"P_team_jet_hover_HLD" ), FX_PATTACH_CUSTOMORIGIN_FOLLOW, hp.prop.LookupAttachment( "REF" ), < 10, 10, -2>, <90,90,90> ) )
-	activeFX.append( StartParticleEffectOnEntityWithPos_ReturnEntity( hp.prop, GetParticleSystemIndex( $"P_team_jet_hover_HLD" ), FX_PATTACH_CUSTOMORIGIN_FOLLOW, hp.prop.LookupAttachment( "REF" ), < 10, -10, -2>, <90,90,90> ) )
-	activeFX.append( StartParticleEffectOnEntityWithPos_ReturnEntity( hp.prop, GetParticleSystemIndex( $"P_team_jet_hover_HLD" ), FX_PATTACH_CUSTOMORIGIN_FOLLOW, hp.prop.LookupAttachment( "REF" ), < -10, 10, -2>, <90,90,90> ) )
-
+	try
+	{
+		activeFX.append( StartParticleEffectOnEntityWithPos_ReturnEntity( hp.prop, GetParticleSystemIndex( $"P_team_jet_hover_HLD" ), FX_PATTACH_CUSTOMORIGIN_FOLLOW, hp.prop.LookupAttachment( "REF" ), < -10, -10, -2>, <90,90,90> ) )
+		activeFX.append( StartParticleEffectOnEntityWithPos_ReturnEntity( hp.prop, GetParticleSystemIndex( $"P_team_jet_hover_HLD" ), FX_PATTACH_CUSTOMORIGIN_FOLLOW, hp.prop.LookupAttachment( "REF" ), < 10, 10, -2>, <90,90,90> ) )
+		activeFX.append( StartParticleEffectOnEntityWithPos_ReturnEntity( hp.prop, GetParticleSystemIndex( $"P_team_jet_hover_HLD" ), FX_PATTACH_CUSTOMORIGIN_FOLLOW, hp.prop.LookupAttachment( "REF" ), < 10, -10, -2>, <90,90,90> ) )
+		activeFX.append( StartParticleEffectOnEntityWithPos_ReturnEntity( hp.prop, GetParticleSystemIndex( $"P_team_jet_hover_HLD" ), FX_PATTACH_CUSTOMORIGIN_FOLLOW, hp.prop.LookupAttachment( "REF" ), < -10, 10, -2>, <90,90,90> ) )
+	} catch ( err ) { }
+	
     // angle it correctly
     hp.prop.SetAngles( <0, hp.prop.GetAngles().y, 0> )
     
     entity mover = CreateScriptMover( hp.prop.GetOrigin(), hp.prop.GetAngles() )
     hp.prop.SetParent( mover )
+
+	
+    #if !OCTBOTS
+	    float speed = 200.
+	#else
+	    float speed = 50.
+	#endif
     
-    float totalTime = Distance2D( hp.prop.GetOrigin(), newHp.origin ) / 50.
-    float timePerLine = min( max( totalTime / path.len(), 0.00001 ), 5. )
+    float totalTime = Distance2D( hp.prop.GetOrigin(), newHp.origin ) / speed
+    float timePerLine = min( max( totalTime / path.len(), 0.01 ), 5. )
 
     foreach( vector point in path )
     {
-		float angle = RadToDeg( DotProduct( hp.prop.GetOrigin(), point ) )
-		dirFX = StartParticleEffectOnEntityWithPos_ReturnEntity( hp.prop, GetParticleSystemIndex( $"P_team_jet_hover_HLD" ), FX_PATTACH_CUSTOMORIGIN_FOLLOW, hp.prop.LookupAttachment( "REF" ), < 0, 0, 20>, <0,angle,0> )
+		try
+		{
+			float angle = RadToDeg( DotProduct( hp.prop.GetOrigin(), point ) )
+			dirFX = StartParticleEffectOnEntityWithPos_ReturnEntity( hp.prop, GetParticleSystemIndex( $"P_team_jet_hover_HLD" ), FX_PATTACH_CUSTOMORIGIN_FOLLOW, hp.prop.LookupAttachment( "REF" ), < 0, 0, 20>, <0,angle,0> )
+		} catch ( err ) { }
 
 		point = FitHardpoint( hp.prop, point )
         mover.NonPhysicsMoveTo( point, timePerLine, 0.0, 0.0 )
-        // wait timePerLine
-        WaitFrame()
+
+	    #if !OCTBOTS
+	        wait timePerLine
+		#else
+	        WaitFrame()
+		#endif
 
 		if ( IsValid( dirFX ) )
 			dirFX.Destroy()
